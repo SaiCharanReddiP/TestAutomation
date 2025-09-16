@@ -1,29 +1,24 @@
--- 1) Member-level active OPL (contract_id = 0)
 SELECT COUNT(DISTINCT o.opl_id) AS src_member_cnt
 FROM enrlcurr_prod.otr_prty_liability o
 JOIN enrlcurr_prod.member_eligibility me
   ON me.member_id = o.member_id
 WHERE o.contract_id = 0
   AND o.opl_status = 'active'
-  AND CURRENT_DATE >= DATE(FROM_UNIXTIME(o.effective_date/1000))
-  AND (o.term_date IS NULL OR CURRENT_DATE < DATE(FROM_UNIXTIME(o.term_date/1000)))
-  AND CURRENT_DATE BETWEEN DATE(FROM_UNIXTIME(me.effective_date/1000))
-                        AND COALESCE(DATE(FROM_UNIXTIME(me.term_date/1000)), DATE '9999-12-31')
+  AND TO_DATE(NOW()) >= TO_DATE(CAST(o.effective_date/1000 AS TIMESTAMP))
+  AND (o.term_date IS NULL OR TO_DATE(NOW()) <  TO_DATE(CAST(o.term_date/1000 AS TIMESTAMP)))
+  AND TO_DATE(NOW()) >= TO_DATE(CAST(me.effective_date/1000 AS TIMESTAMP))
+  AND (me.term_date IS NULL OR TO_DATE(NOW()) <= TO_DATE(CAST(me.term_date/1000 AS TIMESTAMP)))
   AND o.ibmsnap_operation <> 'D';
 
-
--- 2) Contract-level active OPL (member_id = 0)
 SELECT COUNT(DISTINCT o.opl_id) AS src_contract_cnt
 FROM enrlcurr_prod.otr_prty_liability o
 JOIN enrlcurr_prod.member_eligibility me
   ON me.contract_id = o.contract_id
 WHERE o.member_id = 0
   AND o.opl_status = 'active'
-  AND CURRENT_DATE >= DATE(FROM_UNIXTIME(o.effective_date/1000))
-  AND (o.term_date IS NULL OR CURRENT_DATE < DATE(FROM_UNIXTIME(o.term_date/1000)))
-  AND CURRENT_DATE BETWEEN DATE(FROM_UNIXTIME(me.effective_date/1000))
-                        AND COALESCE(DATE(FROM_UNIXTIME(me.term_date/1000)), DATE '9999-12-31')
-  AND o.ibmsnap_operation <> 'D'
-  AND COALESCE(me.relationship,'') = 'O';   -- matches your SQL for contract slice
-
-
+  AND TO_DATE(NOW()) >= TO_DATE(CAST(o.effective_date/1000 AS TIMESTAMP))
+  AND (o.term_date IS NULL OR TO_DATE(NOW()) <  TO_DATE(CAST(o.term_date/1000 AS TIMESTAMP)))
+  AND TO_DATE(NOW()) >= TO_DATE(CAST(me.effective_date/1000 AS TIMESTAMP))
+  AND (me.term_date IS NULL OR TO_DATE(NOW()) <= TO_DATE(CAST(me.term_date/1000 AS TIMESTAMP)))
+  AND me.relationship = 'O'
+  AND o.ibmsnap_operation <> 'D';
